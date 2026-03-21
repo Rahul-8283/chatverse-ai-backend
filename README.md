@@ -1,76 +1,81 @@
-# ChatVerse AI Backend
+<div align="center">
 
-This is the FastAPI backend for the ChatVerse AI application. It provides endpoints for chat, image analysis, and voice transcription using the Google Gemini 2.5 Flash model.
+# 🤖 ChatVerse AI - Core Backend  
+**A blazingly fast FastAPI intelligent routing engine for text, voice, and multimodal Gemini 2.5 context handling.**
 
-## Setup Instructions
+![Python Badge](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white) 
+![FastAPI Badge](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white) 
+![Gemini Badge](https://img.shields.io/badge/Powered_by-Gemini_2.5_Flash-orange?logo=google&logoColor=white)
+![Render Deploy](https://img.shields.io/badge/Render-Deployment-blueviolet)
 
-1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+</div>
 
-2. Configure environment variables:
-   Copy `.env.example` to `.env` and add your `GEMINI_API_KEY`.
-   ```bash
-   cp .env.example .env
-   ```
+<br/>
 
-3. Run the development server:
-   ```bash
-   uvicorn main:app --reload
-   ```
-   The backend will be available at `http://localhost:8000`.
+## 🌐 Overview
+The **ChatVerse AI Backend** acts as the crucial middle-layer between the high-performance React UI and Google's Gemini LLMs. Built completely in asynchronous Python using `FastAPI` and `uvicorn`, this server securely handles API keys, dictates context limits, manages dynamic System Prompts (Personas), and parses multipart payloads natively so the frontend doesn't have to decode binary assets.
 
-## API Documentation
+## 🏗️ Architecture & Workflow Diagram
 
-### POST `/api/chat`
-Handles conversational AI responses with persona selection.
-* **Request Body (JSON):**
-  ```json
-  {
-    "message": "Hello!",
-    "history": [],
-    "persona": "assistant"
-  }
-  ```
-* **Response (JSON):**
-  ```json
-  {
-    "reply": "Hi! How can I help you today?"
-  }
-  ```
+![ChatVerse AI Workflow](https://app.eraser.io/workspace/7qSCXI4BZomyTXpyUvn1/preview)
 
-### POST `/api/image-scan`
-Analyzes an uploaded image and extracts text using Gemini Vision.
-* **Request:** Multipart Form Data (`file`: Image blob, e.g. jpg, png, webp)
-* **Response (JSON):**
-  ```json
-  {
-    "reply": "Image description from Gemini..."
-  }
-  ```
+---
 
-### POST `/api/voice`
-Transcribes an uploaded audio file using Gemini.
-* **Request:** Multipart Form Data (`file`: Audio blob, e.g. webm, wav)
-* **Response (JSON):**
-  ```json
-  {
-    "transcript": "Transcribed audio text..."
-  }
-  ```
+## ⚡ Features Overview
 
-### GET `/health`
-Health check endpoint.
-* **Response (JSON):**
-  ```json
-  {
-    "status": "online"
-  }
-  ```
+### The AI Routing Layer
+This backend acts strictly as an API gateway to Google Gemini, keeping the main React application lightweight and secure:
+- **Persona Context Engineering**: Dynamically swaps system prompts (Assistant, Roast Bot, Therapist, Study Buddy) before reaching the models.
+- **Multimodal Image Pipeline**: Securely processes raw image byte uploads and maps them to Gemini Vision text extractors natively.
+- **Voice Transcription Muxxing**: Parses `.webm` audio streams natively from web recorders, translates them in real-time, and responds contextually.
+- **Access Portability**: Protects the `GEMINI_API_KEY` server-side, preventing browser scraping or local injection exploits.
 
-## Deployment on Railway
-1. Push your code to a GitHub repository.
-2. Link your repository in Railway.
-3. Add the `GEMINI_API_KEY` to the service variables in Railway.
-4. Railway will automatically detect the Python environment, install `requirements.txt`, and run `uvicorn main:app --host 0.0.0.0 --port $PORT` if a Procfile or configuration is automatically generated (if not, specify the start command manually: `uvicorn main:app --host 0.0.0.0 --port $PORT`).
+*(Note: Standard person-to-person messaging does not route through this backend code. P2P chat relies purely on direct Firebase connections in the frontend.)*
+
+---
+
+## 🚀 Quick Start (Local Development)
+
+**1. Clone & Install**
+```bash
+git clone https://github.com/Rahul-8283/chatverse-ai-backend.git
+cd chatverse-ai-backend
+pip install -r requirements.txt
+```
+
+**2. Configure Environment**
+Create a `.env` file at the root containing your Gemini key:
+```dotenv
+GEMINI_API_KEY=AIzaSy...your_gemini_key_here
+```
+
+**3. Boot the Server**
+```bash
+uvicorn main:app --reload
+```
+*Your interactive API documentation is now live at `http://localhost:8000/docs`!*
+
+---
+
+## 📚 API Architecture Routing
+
+### 1. Unified Text Chat (`POST /api/chat`)
+Expects standard JSON histories and handles the persona mappings globally:
+```json
+// Request
+{
+  "message": "Explain black holes",
+  "history": [{"role": "user", "parts": [{"text":"hello"}]}],
+  "persona": "study"
+}
+```
+
+### 2. Vision Intelligence (`POST /api/image-scan`)
+Accepts raw multipart `FormData` intercepting browser `FileReader` boundaries flawlessly:
+* **Payload:** `file: <Blob>` (jpg, png, webp)
+* **Response:** `{ "reply": "This image contains..." }`
+
+### 3. Audio Extraction (`POST /api/voice`)
+Intercepts HTML5 MediaRecorder chunks securely:
+* **Payload:** `file: <Blob>` (audio/webm)
+* **Response:** `{ "transcript": "What the user actually said." }`
