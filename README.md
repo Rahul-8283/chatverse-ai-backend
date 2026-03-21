@@ -17,7 +17,7 @@ The **ChatVerse AI Backend** acts as the crucial middle-layer between the high-p
 
 ## 🏗️ Architecture & Workflow Diagram
 
-![ChatVerse AI Workflow](https://app.eraser.io/workspace/7qSCXI4BZomyTXpyUvn1/preview)
+<img width="1961" height="902" alt="Eraser_FlowDiagram" src="https://github.com/user-attachments/assets/aa6dfc4e-308f-4a88-9290-f2476ac371bb" />
 
 ---
 
