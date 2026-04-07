@@ -71,7 +71,7 @@ async def chat_endpoint(request: ChatRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/image-scan")
-async def image_scan_endpoint(file: UploadFile = File(...)):
+async def image_scan_endpoint(file: UploadFile = File(...), prompt: str = "Analyze and describe this image in detail."):
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY not set")
     try:
@@ -86,7 +86,7 @@ async def image_scan_endpoint(file: UploadFile = File(...)):
             }
         ]
         
-        prompt = "Describe this image in detail. If it contains any text, extract it fully."
+        # 🔒 FIX #12: Use user's custom prompt instead of hardcoded one for multimodal support
         response = model.generate_content([prompt, image_parts[0]])
         
         return {"reply": response.text}
