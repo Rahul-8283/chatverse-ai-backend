@@ -74,13 +74,17 @@ def extract_text_from_pdf(file_content: bytes) -> str:
     """
     try:
         pdf_reader = PyPDF2.PdfReader(BytesIO(file_content))
+        num_pages = len(pdf_reader.pages)
+        print(f"📄 PDF has {num_pages} pages")
+        
         text = ""
         for page in pdf_reader.pages:
             text += page.extract_text() or ""
-        print(f"Extracted {len(text)} characters from PDF.")
+        
+        print(f"✅ Extracted {len(text)} characters from PDF.")
         return text
     except Exception as e:
-        print(f"Error extracting text from PDF: {e}")
+        print(f"❌ Error extracting text from PDF: {e}")
         raise
 
 def chunk_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 100) -> list[str]:
@@ -96,6 +100,7 @@ def chunk_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 100) -> l
         list[str]: A list of text chunks.
     """
     if not text:
+        print("⚠️ No text to chunk")
         return []
         
     chunks = []
@@ -105,5 +110,5 @@ def chunk_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 100) -> l
         chunks.append(text[start:end])
         start += chunk_size - chunk_overlap
     
-    print(f"Split text into {len(chunks)} chunks.")
+    print(f"✂️ Split text into {len(chunks)} chunks of ~{chunk_size} characters each.")
     return chunks

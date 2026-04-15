@@ -15,31 +15,35 @@ async def process_and_store_document(user_id: str, file_content: bytes, file_nam
     3. Generates embeddings for each chunk.
     4. Upserts the embeddings into Pinecone.
     """
-    print(f"Starting document processing for user '{user_id}', file '{file_name}', type '{file_type}'.")
+    print(f"\n🚀 Starting document processing for user '{user_id}', file '{file_name}', type '{file_type}'.")
     
     text = ""
     # 1. Extract text based on file type
     if file_type == 'application/pdf':
+        print("📥 Extracting text from PDF...")
         text = data_processor.extract_text_from_pdf(file_content)
     elif file_type.startswith('image/'):
+        print("🖼️ Generating description from image...")
         text = await data_processor.extract_text_from_image(file_content)
     elif file_type.startswith('audio/'):
+        print("🎤 Transcribing audio...")
         text = data_processor.extract_text_from_audio(file_content, file_name)
     else:
-        raise ValueError(f"Unsupported file content type: {file_type}")
+        raise ValueError(f"❌ Unsupported file content type: {file_type}")
 
     # 2. Chunk the text
     chunks = data_processor.chunk_text(text)
     
     if not chunks:
-        print("No text chunks to process.")
+        print("⚠️ No text chunks to process.")
         return
 
     # 3. Generate embeddings for each chunk
-    print(f"Generating embeddings for {len(chunks)} chunks...")
+    print(f"🔢 Generating embeddings for {len(chunks)} chunks...")
     chunk_embeddings = [embeddings.generate_embedding(chunk) for chunk in chunks]
     
     # 4. Prepare vectors for Pinecone
+    print("📝 Preparing vectors for Pinecone...")
     vectors_to_upsert = []
     for i, chunk in enumerate(chunks):
         vector_id = str(uuid.uuid4())
@@ -49,14 +53,19 @@ async def process_and_store_document(user_id: str, file_content: bytes, file_nam
             "metadata": {
                 "user_id": user_id,
                 "file_name": file_name,
-                "chunk_text": chunk
+                "chunk_text": chunk[:500]  # Store first 500 chars for reference
             }
         })
 
     # 5. Upsert to Pinecone
-    pinecone_handler.upsert_vectors(vectors=vectors_to_upsert, namespace=user_id)
+    try:
+        pinecone_handler.upsert_vectors(vectors=vectors_to_upsert, namespace=user_id)
+        print(f"✅ Successfully stored {len(vectors_to_upsert)} vectors in Pinecone for user '{user_id}'")
+    except Exception as e:
+        print(f"❌ Failed to upsert vectors to Pinecone: {e}")
+        raise
     
-    print("Document processing and storage complete.")
+    print("✅ Document processing and storage complete.\n")
 
 
 

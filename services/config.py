@@ -44,5 +44,5 @@ FIREBASE_CREDENTIALS = {
 }
 
 # --- Model Configuration ---
-EMBEDDING_MODEL = 'models/embedding-001'
+EMBEDDING_MODEL = 'gemini-embedding-001'
 GENERATIVE_MODEL = 'gemini-2.5-flash'

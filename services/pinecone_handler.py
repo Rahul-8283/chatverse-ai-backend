@@ -9,11 +9,12 @@ try:
     pc = Pinecone(api_key=PINECONE_API_KEY)
     
     # Check if the index exists. If not, create it.
-    if PINECONE_INDEX_NAME not in pc.list_indexes().names():
+    existing_indexes = pc.list_indexes().names()
+    if PINECONE_INDEX_NAME not in existing_indexes:
         print(f"Pinecone index '{PINECONE_INDEX_NAME}' not found. Creating new index...")
         pc.create_index(
             name=PINECONE_INDEX_NAME,
-            dimension=768,  # Gemini embeddings dimension
+            dimension=768,  # text-embedding-004 produces 768-dimensional vectors
             metric='cosine',
             spec=ServerlessSpec(
                 cloud='aws',
@@ -25,10 +26,10 @@ try:
         print(f"Pinecone index '{PINECONE_INDEX_NAME}' already exists.")
 
     index = pc.Index(PINECONE_INDEX_NAME)
-    print("Pinecone client and index initialized successfully.")
+    print("✅ Pinecone client and index initialized successfully.")
 
 except Exception as e:
-    print(f"Error initializing Pinecone: {e}")
+    print(f"❌ Error initializing Pinecone: {e}")
     raise
 
 def upsert_vectors(vectors: list, namespace: str):
