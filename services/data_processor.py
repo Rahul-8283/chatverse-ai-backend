@@ -61,7 +61,6 @@ def extract_text_from_audio(file_content: bytes, file_name: str) -> str:
         print("Please ensure the audio is in a compatible format (like WAV) and ffmpeg is installed for other formats.")
         raise
 
-
 def extract_text_from_pdf(file_content: bytes) -> str:
     """
     Extracts text from the content of a PDF file.
