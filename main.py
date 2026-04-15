@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 # Import RAG services and authentication
-from services import rag_service
+from services import rag_service, data_processor
 from services.firebase_auth import verify_firebase_token
 from services.config import GEMINI_API_KEY, GENERATIVE_MODEL
 
@@ -162,9 +162,34 @@ async def image_scan_handler(file: UploadFile = File(...), prompt: str = Form(..
 @app.post("/api/voice", summary="Processes a voice recording")
 async def voice_handler(file: UploadFile = File(...)):
     """
-    A placeholder for voice processing. This would be where speech-to-text
-    is performed before chunking and embedding for RAG.
+    Transcribes audio to text using speech-to-text.
+    Supports WAV format natively. Other formats may need conversion.
+    
+    Args:
+        file: Audio file (WAV, MP3, etc.)
+    
+    Returns:
+        transcript: The transcribed text from the audio
     """
-    # In a real implementation, you would use a speech-to-text library here.
-    # For now, we'll just return a placeholder.
-    return {"response": "Voice processing not yet implemented. The transcript would be embedded here."}
+    if not file:
+        raise HTTPException(status_code=400, detail="No audio file provided.")
+    
+    try:
+        # Verify it's an audio file
+        if not file.content_type.startswith('audio/'):
+            raise HTTPException(status_code=400, detail=f"File must be an audio file, got {file.content_type}")
+        
+        file_content = await file.read()
+        
+        # Transcribe audio to text using the data processor
+        transcript = data_processor.extract_text_from_audio(file_content, file.filename)
+        
+        return {
+            "success": True,
+            "transcript": transcript,
+            "filename": file.filename
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error transcribing audio: {str(e)}")
