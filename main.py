@@ -81,11 +81,12 @@ async def chat_handler(request: ChatRequest):
         return {"response": response.text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
 
 # --- RAG Chat Endpoint ---
 @app.post("/api/rag-chat", summary="Handles chat queries using the RAG pipeline")
 async def rag_chat_handler(request: RAGChatRequest, user_id: str = Depends(verify_firebase_token)):
+# async def rag_chat_handler(request: RAGChatRequest, user_id: str = "test-user"):  # For testing - change back to Depends(verify_firebase_token)
+
     """
     Receives a query and uses the RAG service to generate a context-aware response.
     This endpoint is secured and requires a valid Firebase ID token.
@@ -101,6 +102,8 @@ async def rag_chat_handler(request: RAGChatRequest, user_id: str = Depends(verif
 async def upload_document_handler(
     file: UploadFile = File(...),
     user_id: str = Depends(verify_firebase_token)
+    # user_id: str = "test-user"  # For testing - change back to Depends(verify_firebase_token) later
+
 ):
     """
     Handles uploading of a document (PDF, image, audio).
