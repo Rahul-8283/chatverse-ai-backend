@@ -10,12 +10,34 @@ async def process_and_store_document(user_id: str, file_content: bytes, file_nam
     """
     Processes an uploaded document, generates embeddings, and stores them.
     
-    1. Extracts text from the document based on its type (PDF, image, audio).
-    2. Chunks the text.
-    3. Generates embeddings for each chunk.
-    4. Upserts the embeddings into Pinecone.
+    1. Uploads the file to Supabase storage.
+    2. Extracts text from the document based on its type (PDF, image, audio).
+    3. Chunks the text.
+    4. Generates embeddings for each chunk.
+    5. Upserts the embeddings into Pinecone.
     """
     print(f"\n🚀 Starting document processing for user '{user_id}', file '{file_name}', type '{file_type}'.")
+    
+    # 0. Upload file to Supabase
+    try:
+        print(f"☁️ Uploading file to Supabase...")
+        import tempfile
+        import os as os_module
+        
+        # Save to temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os_module.path.splitext(file_name)[1]) as tmp:
+            tmp.write(file_content)
+            tmp_path = tmp.name
+        
+        # Upload to Supabase
+        file_url = supabase_handler.upload_file_to_storage(user_id, tmp_path, file_name)
+        print(f"✅ File uploaded to Supabase: {file_url}")
+        
+        # Clean up temp file
+        os_module.remove(tmp_path)
+    except Exception as e:
+        print(f"⚠️ Warning: Could not upload to Supabase (non-critical): {e}")
+        # Continue processing even if upload fails - still store in Pinecone
     
     text = ""
     # 1. Extract text based on file type

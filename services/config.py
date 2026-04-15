@@ -45,4 +45,5 @@ FIREBASE_CREDENTIALS = {
 
 # --- Model Configuration ---
 EMBEDDING_MODEL = 'gemini-embedding-001'
+EMBEDDING_DIMENSION = 3072  # gemini-embedding-001 produces 3072-dimensional vectors
 GENERATIVE_MODEL = 'gemini-2.5-flash'

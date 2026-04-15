@@ -2,7 +2,7 @@
 Handles vector database operations with Pinecone.
 """
 from pinecone import Pinecone, ServerlessSpec
-from .config import PINECONE_API_KEY, PINECONE_INDEX_NAME
+from .config import PINECONE_API_KEY, PINECONE_INDEX_NAME, EMBEDDING_DIMENSION
 
 # --- Pinecone Initialization ---
 try:
@@ -11,19 +11,19 @@ try:
     # Check if the index exists. If not, create it.
     existing_indexes = pc.list_indexes().names()
     if PINECONE_INDEX_NAME not in existing_indexes:
-        print(f"Pinecone index '{PINECONE_INDEX_NAME}' not found. Creating new index...")
+        print(f"🔄 Pinecone index '{PINECONE_INDEX_NAME}' not found. Creating new index with {EMBEDDING_DIMENSION} dimensions...")
         pc.create_index(
             name=PINECONE_INDEX_NAME,
-            dimension=768,  # text-embedding-004 produces 768-dimensional vectors
+            dimension=EMBEDDING_DIMENSION,  # Use the dimension from config (3072 for gemini-embedding-001)
             metric='cosine',
             spec=ServerlessSpec(
                 cloud='aws',
                 region='us-east-1'
             )
         )
-        print("Pinecone index created successfully.")
+        print(f"✅ Pinecone index '{PINECONE_INDEX_NAME}' created successfully with {EMBEDDING_DIMENSION} dimensions.")
     else:
-        print(f"Pinecone index '{PINECONE_INDEX_NAME}' already exists.")
+        print(f"✅ Pinecone index '{PINECONE_INDEX_NAME}' already exists.")
 
     index = pc.Index(PINECONE_INDEX_NAME)
     print("✅ Pinecone client and index initialized successfully.")
