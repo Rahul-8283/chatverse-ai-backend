@@ -1,0 +1,113 @@
+"""
+Orchestrates the entire Retrieval-Augmented Generation (RAG) pipeline.
+"""
+import uuid
+from . import data_processor, embeddings, pinecone_handler, supabase_handler
+import google.generativeai as genai
+from .config import GENERATIVE_MODEL
+
+async def process_and_store_document(user_id: str, file_content: bytes, file_name: str, file_type: str):
+    """
+    Processes an uploaded document, generates embeddings, and stores them.
+    
+    1. Extracts text from the document.
+    2. Chunks the text.
+    3. Generates embeddings for each chunk.
+    4. Upserts the embeddings into Pinecone.
+    """
+    print(f"Starting document processing for user '{user_id}', file '{file_name}'.")
+    
+    # 1. Extract text
+    if file_type == 'pdf':
+        text = data_processor.extract_text_from_pdf(file_content)
+    else:
+        # Placeholder for other file types like images or audio
+        raise ValueError(f"Unsupported file type: {file_type}")
+
+    # 2. Chunk the text
+    chunks = data_processor.chunk_text(text)
+    
+    if not chunks:
+        print("No text chunks to process.")
+        return
+
+    # 3. Generate embeddings for each chunk
+    print(f"Generating embeddings for {len(chunks)} chunks...")
+    chunk_embeddings = [embeddings.generate_embedding(chunk) for chunk in chunks]
+    
+    # 4. Prepare vectors for Pinecone
+    vectors_to_upsert = []
+    for i, chunk in enumerate(chunks):
+        vector_id = str(uuid.uuid4())
+        vectors_to_upsert.append({
+            "id": vector_id,
+            "values": chunk_embeddings[i],
+            "metadata": {
+                "user_id": user_id,
+                "file_name": file_name,
+                "chunk_text": chunk
+            }
+        })
+
+    # 5. Upsert to Pinecone
+    pinecone_handler.upsert_vectors(vectors=vectors_to_upsert, namespace=user_id)
+    
+    print("Document processing and storage complete.")
+
+
+async def rag_query(user_id: str, query: str) -> dict:
+    """
+    Performs a RAG query.
+    
+    1. Generates an embedding for the user's query.
+    2. Queries Pinecone to find relevant context.
+    3. Builds a prompt with the context and query.
+    4. Calls the generative model to get a response.
+    """
+    print(f"Performing RAG query for user '{user_id}': '{query}'")
+    
+    # 1. Generate query embedding
+    query_embedding = embeddings.generate_query_embedding(query)
+    
+    # 2. Query Pinecone for relevant context
+    matches = pinecone_handler.query_vectors(
+        query_embedding=query_embedding,
+        top_k=3,
+        namespace=user_id
+    )
+    
+    # 3. Build context from matches
+    context = "Context from user's documents:\n"
+    sources = []
+    if matches:
+        for match in matches:
+            context += f"- {match['metadata']['chunk_text']}\n"
+            sources.append({
+                "file_name": match['metadata']['file_name'],
+                "chunk_text": match['metadata']['chunk_text']
+            })
+    else:
+        context = "No relevant context found in user's documents."
+
+    # 4. Build the final prompt
+    prompt = f"""
+    You are a helpful AI assistant. Answer the user's query based on the provided context.
+    If the context is not sufficient, use your general knowledge but state that the information
+    is not from the user's documents.
+
+    {context}
+
+    User Query: {query}
+    
+    Answer:
+    """
+    
+    # 5. Call the generative model
+    model = genai.GenerativeModel(GENERATIVE_MODEL)
+    response = await model.generate_content_async(prompt)
+    
+    return {
+        "response": response.text,
+        "sources": sources,
+        "used_rag": bool(matches) # True if context was found and used
+    }
