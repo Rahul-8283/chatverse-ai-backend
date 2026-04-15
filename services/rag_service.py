@@ -10,19 +10,23 @@ async def process_and_store_document(user_id: str, file_content: bytes, file_nam
     """
     Processes an uploaded document, generates embeddings, and stores them.
     
-    1. Extracts text from the document.
+    1. Extracts text from the document based on its type (PDF, image, audio).
     2. Chunks the text.
     3. Generates embeddings for each chunk.
     4. Upserts the embeddings into Pinecone.
     """
-    print(f"Starting document processing for user '{user_id}', file '{file_name}'.")
+    print(f"Starting document processing for user '{user_id}', file '{file_name}', type '{file_type}'.")
     
-    # 1. Extract text
-    if file_type == 'pdf':
+    text = ""
+    # 1. Extract text based on file type
+    if file_type == 'application/pdf':
         text = data_processor.extract_text_from_pdf(file_content)
+    elif file_type.startswith('image/'):
+        text = await data_processor.extract_text_from_image(file_content)
+    elif file_type.startswith('audio/'):
+        text = data_processor.extract_text_from_audio(file_content, file_name)
     else:
-        # Placeholder for other file types like images or audio
-        raise ValueError(f"Unsupported file type: {file_type}")
+        raise ValueError(f"Unsupported file content type: {file_type}")
 
     # 2. Chunk the text
     chunks = data_processor.chunk_text(text)
@@ -55,6 +59,7 @@ async def process_and_store_document(user_id: str, file_content: bytes, file_nam
     print("Document processing and storage complete.")
 
 
+
 async def rag_query(user_id: str, query: str) -> dict:
     """
     Performs a RAG query.
@@ -81,11 +86,13 @@ async def rag_query(user_id: str, query: str) -> dict:
     sources = []
     if matches:
         for match in matches:
-            context += f"- {match['metadata']['chunk_text']}\n"
-            sources.append({
-                "file_name": match['metadata']['file_name'],
-                "chunk_text": match['metadata']['chunk_text']
-            })
+            # Ensure metadata and its fields exist
+            if 'metadata' in match and 'chunk_text' in match['metadata'] and 'file_name' in match['metadata']:
+                context += f"- {match['metadata']['chunk_text']}\n"
+                sources.append({
+                    "file_name": match['metadata']['file_name'],
+                    "chunk_text": match['metadata']['chunk_text']
+                })
     else:
         context = "No relevant context found in user's documents."
 

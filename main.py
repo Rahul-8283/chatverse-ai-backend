@@ -17,7 +17,6 @@ app = FastAPI(title="ChatVerse AI Backend")
 # Allows frontend to communicate with this backend
 origins = [
     "http://localhost:5173",
-    "http://localhost:5174",
     "https://chatverse-ai.vercel.app",
 ]
 app.add_middleware(
@@ -92,12 +91,11 @@ async def rag_chat_handler(request: RAGChatRequest, user_id: str = Depends(verif
 # --- Document Upload Endpoint ---
 @app.post("/api/upload-document", summary="Uploads and processes a document for RAG")
 async def upload_document_handler(
-    file: UploadFile = File(...), 
-    file_type: str = Form("pdf"), 
+    file: UploadFile = File(...),
     user_id: str = Depends(verify_firebase_token)
 ):
     """
-    Handles uploading of a document (e.g., PDF).
+    Handles uploading of a document (PDF, image, audio).
     The document is processed and its embeddings are stored in Pinecone.
     This endpoint is secured.
     """
@@ -106,6 +104,7 @@ async def upload_document_handler(
     
     try:
         file_content = await file.read()
+        content_type = file.content_type
         
         # Process and store the document in the background
         # For a real production app, you would use a task queue like Celery or ARQ
@@ -113,7 +112,7 @@ async def upload_document_handler(
             user_id=user_id,
             file_content=file_content,
             file_name=file.filename,
-            file_type=file_type
+            file_type=content_type
         )
         
         return {
