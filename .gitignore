@@ -13,6 +13,8 @@ dist-ssr
 *.local
 
 # Environment variables
+.venv
+venv/
 .env
 .env.local
 .env.*.local
