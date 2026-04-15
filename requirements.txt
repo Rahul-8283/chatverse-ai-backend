@@ -5,8 +5,7 @@ google-generativeai==0.3.0
 python-multipart==0.0.6
 
 # Supabase (File Storage)
-supabase==2.0.3
-postgrest-py==0.10.2
+supabase>=2.4.0
 
 # Pinecone (Vector Database)
 pinecone-client==3.0.0

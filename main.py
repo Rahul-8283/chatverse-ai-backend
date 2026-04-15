@@ -65,6 +65,13 @@ async def chat_handler(request: ChatRequest):
         # Constructing the chat history for the model
         chat_history = []
         for item in request.history:
+            # Skip empty items
+            if not item or not isinstance(item, dict):
+                continue
+            # Check if required fields exist
+            if "sender" not in item or "text" not in item:
+                continue
+            
             role = "user" if item["sender"] == "user" else "model"
             chat_history.append({"role": role, "parts": [{"text": item["text"]}]})
             
@@ -73,6 +80,7 @@ async def chat_handler(request: ChatRequest):
         
         return {"response": response.text}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- RAG Chat Endpoint ---
