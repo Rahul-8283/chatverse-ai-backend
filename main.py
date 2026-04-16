@@ -47,7 +47,7 @@ class RAGChatRequest(BaseModel):
 
 # --- API Endpoints ---
 
-@app.get("/", summary="Root endpoint to check server status")
+@app.get("/health", summary="Root endpoint to check server status")
 async def root():
     """Returns a welcome message and server status."""
     return {"message": "ChatVerse AI Backend is running!"}
