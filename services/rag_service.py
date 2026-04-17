@@ -4,7 +4,11 @@ Orchestrates the entire Retrieval-Augmented Generation (RAG) pipeline.
 import uuid
 from . import data_processor, embeddings, pinecone_handler, supabase_handler
 import google.generativeai as genai
-from .config import GENERATIVE_MODEL
+from groq import Groq
+from .config import GENERATIVE_MODEL, GROQ_API_KEY, GROQ_MODEL
+
+# Initialize Groq client
+groq_client = Groq(api_key=GROQ_API_KEY)
 
 async def process_and_store_document(user_id: str, file_content: bytes, file_name: str, file_type: str):
     """

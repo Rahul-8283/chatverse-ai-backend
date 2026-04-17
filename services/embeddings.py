@@ -36,7 +36,7 @@ def generate_embedding(text: str) -> list:
         except Exception as e1:
             # Fallback to alternative model format
             print(f"⚠️ {EMBEDDING_MODEL} failed, trying alternative format...")
-            alt_model = 'models/embedding-001' if not EMBEDDING_MODEL.startswith('models/') else 'embedding-001'
+            alt_model = 'models/gemini-embedding-001' if not EMBEDDING_MODEL.startswith('models/') else 'gemini-embedding-001'
             result = genai.embed_content(
                 model=alt_model,
                 content=text,
@@ -74,7 +74,7 @@ def generate_query_embedding(text: str) -> list:
         except Exception as e1:
             # Fallback to alternative model format
             print(f"⚠️ {EMBEDDING_MODEL} failed for query, trying alternative format...")
-            alt_model = 'models/embedding-001' if not EMBEDDING_MODEL.startswith('models/') else 'embedding-001'
+            alt_model = 'models/gemini-embedding-001' if not EMBEDDING_MODEL.startswith('models/') else 'gemini-embedding-001'
             result = genai.embed_content(
                 model=alt_model,
                 content=text,

@@ -1,5 +1,6 @@
 import os
 import google.generativeai as genai
+from groq import Groq
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -8,7 +9,7 @@ from typing import List, Optional
 # Import RAG services and authentication
 from services import rag_service, data_processor
 from services.firebase_auth import verify_firebase_token
-from services.config import GEMINI_API_KEY, GENERATIVE_MODEL
+from services.config import GEMINI_API_KEY, GROQ_API_KEY, GENERATIVE_MODEL, GROQ_MODEL
 
 # --- FastAPI App Initialization ---
 app = FastAPI(title="ChatVerse AI Backend")
@@ -27,13 +28,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Gemini API Configuration ---
+# --- API Client Configuration ---
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    print("Gemini API configured successfully for main app.")
+    print("Gemini API configured successfully.")
 except Exception as e:
-    print(f"Error configuring Gemini API in main app: {e}")
-    raise
+    print(f"Error configuring Gemini API: {e}")
+    # We don't raise here to allow fallback to work if Gemini key is missing
+
+try:
+    groq_client = Groq(api_key=GROQ_API_KEY)
+    print("Groq API client configured successfully.")
+except Exception as e:
+    print(f"Error configuring Groq API client: {e}")
+    # We don't raise here to allow fallback to work if Groq key is missing
 
 # --- Pydantic Models for Request Bodies ---
 class ChatRequest(BaseModel):
@@ -52,47 +60,76 @@ async def root():
     """Returns a welcome message and server status."""
     return {"message": "ChatVerse AI Backend is running!"}
 
-# --- Standard Chat Endpoint (Direct to Gemini) ---
-@app.post("/api/chat", summary="Handles direct chat with Gemini AI")
+# --- Standard Chat Endpoint (Direct to LLM with Fallback) ---
+@app.post("/api/chat", summary="Handles direct chat with an LLM, with fallback")
 async def chat_handler(request: ChatRequest):
     """
-    Receives a chat message and history, and returns a response from Gemini.
-    This endpoint does NOT use the RAG pipeline.
+    Receives a chat message and history, and returns a response from an LLM.
+    It first tries Gemini and falls back to Groq on specific errors.
     """
+    # Constructing the chat history for the models
+    chat_history = []
+    for item in request.history:
+        if not item or "sender" not in item or "text" not in item:
+            continue
+        role = "user" if item["sender"] == "user" else "assistant"
+        chat_history.append({"role": role, "content": item["text"]})
+
+    # 1. Try Gemini first
     try:
+        print("Attempting to generate content with Gemini...")
         model = genai.GenerativeModel(GENERATIVE_MODEL)
         
-        # Constructing the chat history for the model
-        chat_history = []
-        for item in request.history:
-            # Skip empty items
-            if not item or not isinstance(item, dict):
-                continue
-            # Check if required fields exist
-            if "sender" not in item or "text" not in item:
-                continue
-            
-            role = "user" if item["sender"] == "user" else "model"
-            chat_history.append({"role": role, "parts": [{"text": item["text"]}]})
-            
-        chat = model.start_chat(history=chat_history)
-        response = await chat.send_message_async(request.message)
+        # Reformat history for Gemini
+        gemini_history = [
+            {"role": "user" if h["role"] == "user" else "model", "parts": [{"text": h["content"]}]}
+            for h in chat_history
+        ]
         
+        chat = model.start_chat(history=gemini_history)
+        response = await chat.send_message_async(request.message)
+        print("Successfully generated content with Gemini.")
         return {"response": response.text}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Gemini API failed: {e}. Falling back to Groq.")
+
+    # 2. Fallback to Groq
+    try:
+        print("Attempting to generate content with Groq...")
+        # Add the current user message to the history for Groq
+        chat_history.append({"role": "user", "content": request.message})
+        
+        # Add system prompt for persona
+        if request.persona:
+            chat_history.insert(0, {"role": "system", "content": f"You are {request.persona}. Respond accordingly."})
+
+        chat_completion = groq_client.chat.completions.create(
+            messages=chat_history,
+            model=GROQ_MODEL,
+        )
+        response_text = chat_completion.choices[0].message.content
+        print("Successfully generated content with Groq.")
+        return {"response": response_text}
+    except Exception as e_groq:
+        print(f"Groq API also failed: {e_groq}")
+        raise HTTPException(status_code=500, detail="Both Gemini and Groq APIs failed.")
 
 # --- RAG Chat Endpoint ---
 @app.post("/api/rag-chat", summary="Handles chat queries using the RAG pipeline")
 async def rag_chat_handler(request: RAGChatRequest, user_id: str = Depends(verify_firebase_token)):
-# async def rag_chat_handler(request: RAGChatRequest, user_id: str = "test-user"):  # For testing - change back to Depends(verify_firebase_token)
+# async def rag_chat_handler(request: RAGChatRequest, user_id: str = "test-user"):  # For testing
 
     """
     Receives a query and uses the RAG service to generate a context-aware response.
     This endpoint is secured and requires a valid Firebase ID token.
     """
     try:
-        result = await rag_service.rag_query(user_id=user_id, query=request.query)
+        # The fallback logic is now inside rag_service.rag_query
+        result = await rag_service.rag_query(
+            user_id=user_id, 
+            query=request.query,
+            persona=request.persona
+        )
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -102,7 +139,7 @@ async def rag_chat_handler(request: RAGChatRequest, user_id: str = Depends(verif
 async def upload_document_handler(
     file: UploadFile = File(...),
     user_id: str = Depends(verify_firebase_token)
-    # user_id: str = "test-user"  # For testing - change back to Depends(verify_firebase_token) later
+    # user_id: str = "test-user"  # For testing
 
 ):
     """
@@ -117,8 +154,6 @@ async def upload_document_handler(
         file_content = await file.read()
         content_type = file.content_type
         
-        # Process and store the document in the background
-        # For a real production app, you would use a task queue like Celery or ARQ
         await rag_service.process_and_store_document(
             user_id=user_id,
             file_content=file_content,
@@ -134,17 +169,16 @@ async def upload_document_handler(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred during file processing: {e}")
 
-# --- Image Scan Endpoint (Existing, could be adapted for RAG) ---
-@app.post("/api/image-scan", summary="Analyzes an uploaded image")
+# --- Image Scan Endpoint (with Fallback) ---
+@app.post("/api/image-scan", summary="Analyzes an uploaded image with fallback")
 async def image_scan_handler(file: UploadFile = File(...), prompt: str = Form(...)):
     """
     Analyzes an image using Gemini's multimodal capabilities.
-    This could be extended to store image descriptions as embeddings for RAG.
+    This does not fall back to Groq as Groq does not support image inputs.
     """
     try:
         model = genai.GenerativeModel(GENERATIVE_MODEL)
         
-        # Ensure file is an image
         if "image" not in file.content_type:
             raise HTTPException(status_code=400, detail="File must be an image.")
             
@@ -156,32 +190,24 @@ async def image_scan_handler(file: UploadFile = File(...), prompt: str = Form(..
         response = await model.generate_content_async(prompt_parts)
         return {"response": response.text}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Image scan with Gemini failed: {e}")
+        raise HTTPException(status_code=500, detail="Image analysis failed. The fallback API does not support images.")
 
-# --- Voice Processing Endpoint (Existing, could be adapted for RAG) ---
+# --- Voice Processing Endpoint ---
 @app.post("/api/voice", summary="Processes a voice recording")
 async def voice_handler(file: UploadFile = File(...)):
     """
     Transcribes audio to text using speech-to-text.
-    Supports WAV format natively. Other formats may need conversion.
-    
-    Args:
-        file: Audio file (WAV, MP3, etc.)
-    
-    Returns:
-        transcript: The transcribed text from the audio
     """
     if not file:
         raise HTTPException(status_code=400, detail="No audio file provided.")
     
     try:
-        # Verify it's an audio file
         if not file.content_type.startswith('audio/'):
             raise HTTPException(status_code=400, detail=f"File must be an audio file, got {file.content_type}")
         
         file_content = await file.read()
         
-        # Transcribe audio to text using the data processor
         transcript = data_processor.extract_text_from_audio(file_content, file.filename)
         
         return {

@@ -12,6 +12,11 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY environment variable not set.")
 
+# --- Groq ---
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    raise ValueError("GROQ_API_KEY environment variable not set.")
+
 # --- Pinecone ---
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
@@ -47,3 +52,5 @@ FIREBASE_CREDENTIALS = {
 EMBEDDING_MODEL = 'gemini-embedding-001'
 EMBEDDING_DIMENSION = 3072  # gemini-embedding-001 produces 3072-dimensional vectors
 GENERATIVE_MODEL = 'gemini-2.5-flash'
+GROQ_MODEL = 'llama-3.1-70b-versatile'  # Groq model for fallback
+
