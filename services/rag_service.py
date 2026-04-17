@@ -93,16 +93,14 @@ async def process_and_store_document(user_id: str, file_content: bytes, file_nam
     
     print("✅ Document processing and storage complete.\n")
 
-
-
 async def rag_query(user_id: str, query: str) -> dict:
     """
-    Performs a RAG query.
+    Performs a RAG query with a fallback from Gemini to Groq.
     
     1. Generates an embedding for the user's query.
     2. Queries Pinecone to find relevant context.
     3. Builds a prompt with the context and query.
-    4. Calls the generative model to get a response.
+    4. Calls the generative model to get a response, with Groq as fallback.
     """
     print(f"Performing RAG query for user '{user_id}': '{query}'")
     
@@ -144,12 +142,37 @@ async def rag_query(user_id: str, query: str) -> dict:
     Answer:
     """
     
-    # 5. Call the generative model
-    model = genai.GenerativeModel(GENERATIVE_MODEL)
-    response = await model.generate_content_async(prompt)
+    # 5. Call the generative model with Gemini-to-Groq fallback
+    response_text = ""
+    
+    # Try Gemini first
+    try:
+        print("Attempting RAG query with Gemini...")
+        model = genai.GenerativeModel(GENERATIVE_MODEL)
+        response = await model.generate_content_async(prompt)
+        response_text = response.text
+        print("✅ Successfully generated RAG response with Gemini.")
+    except Exception as e:
+        print(f"❌ Gemini RAG failed: {e}. Falling back to Groq.")
+        
+        # Fallback to Groq
+        try:
+            print("Attempting RAG query with Groq...")
+            chat_completion = groq_client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": "You are a helpful AI assistant. Answer based on the provided context."},
+                    {"role": "user", "content": f"Context:\n{context}\n\nQuery: {query}"}
+                ],
+                model=GROQ_MODEL,
+            )
+            response_text = chat_completion.choices[0].message.content
+            print("✅ Successfully generated RAG response with Groq.")
+        except Exception as e_groq:
+            print(f"❌ Groq RAG also failed: {e_groq}")
+            raise Exception("Both Gemini and Groq RAG failed.")
     
     return {
-        "response": response.text,
+        "response": response_text,
         "sources": sources,
-        "used_rag": bool(matches) # True if context was found and used
+        "used_rag": bool(matches)  # True if context was found and used
     }

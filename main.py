@@ -51,7 +51,6 @@ class ChatRequest(BaseModel):
 
 class RAGChatRequest(BaseModel):
     query: str
-    persona: Optional[str] = "default"
 
 # --- API Endpoints ---
 
@@ -127,8 +126,7 @@ async def rag_chat_handler(request: RAGChatRequest, user_id: str = Depends(verif
         # The fallback logic is now inside rag_service.rag_query
         result = await rag_service.rag_query(
             user_id=user_id, 
-            query=request.query,
-            persona=request.persona
+            query=request.query
         )
         return result
     except Exception as e:
