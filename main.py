@@ -18,7 +18,7 @@ app = FastAPI(title="ChatVerse AI Backend")
 # Allows frontend to communicate with this backend
 origins = [
     "http://localhost:5173",
-    "https://chatverse-ai.vercel.app",
+    "https://chatverse-ai-chat.vercel.app",
 ]
 app.add_middleware(
     CORSMiddleware,
