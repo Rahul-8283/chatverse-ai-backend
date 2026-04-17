@@ -15,7 +15,6 @@ app.add_middleware(
     allow_origins=[
         "https://chatverse-ai-chat.vercel.app",
         "http://localhost:5173",
-        "https://chatverse-738ldwtdu-lsrahul12-6390s-projects.vercel.app/",
     ],
     allow_credentials=True,
     allow_methods=["*"],
