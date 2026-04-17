@@ -49,8 +49,8 @@ FIREBASE_CREDENTIALS = {
 }
 
 # --- Model Configuration ---
-EMBEDDING_MODEL = 'gemini-embedding-001'
+EMBEDDING_MODEL = 'gemini-embedding-001'  # gemini embedding model
 EMBEDDING_DIMENSION = 3072  # gemini-embedding-001 produces 3072-dimensional vectors
-GENERATIVE_MODEL = 'gemini-2.5-flash'
-GROQ_MODEL = 'llama-3.1-70b-versatile'  # Groq model for fallback
+GENERATIVE_MODEL = 'gemini-2.5-flash'  # gemini model
+GROQ_MODEL = 'llama-3.3-70b-versatile'  # Groq model
 
