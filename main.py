@@ -217,3 +217,37 @@ async def voice_handler(file: UploadFile = File(...)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error transcribing audio: {str(e)}")
+
+# --- Document Management Endpoints ---
+@app.get("/api/documents", summary="Get all documents uploaded by user")
+async def get_documents(user_id: str = Depends(verify_firebase_token)):
+    """
+    Retrieves all documents uploaded by the current user from Firestore.
+    """
+    try:
+        documents = await rag_service.get_user_documents(user_id)
+        return {"documents": documents}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching documents: {str(e)}")
+
+@app.delete("/api/documents/{doc_id}", summary="Delete a specific document")
+async def delete_document(doc_id: str, user_id: str = Depends(verify_firebase_token)):
+    """
+    Deletes a specific document from Firestore, Supabase, and Pinecone.
+    """
+    try:
+        await rag_service.delete_document(user_id, doc_id)
+        return {"success": True, "message": "Document deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting document: {str(e)}")
+
+@app.delete("/api/documents/delete-all", summary="Delete all documents for user")
+async def delete_all_documents(user_id: str = Depends(verify_firebase_token)):
+    """
+    Deletes all documents uploaded by the user from Firestore, Supabase, and Pinecone.
+    """
+    try:
+        await rag_service.delete_all_documents(user_id)
+        return {"success": True, "message": "All documents deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting documents: {str(e)}")
