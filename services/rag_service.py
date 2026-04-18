@@ -2,6 +2,7 @@
 Orchestrates the entire Retrieval-Augmented Generation (RAG) pipeline.
 """
 import uuid
+import time
 from . import data_processor, embeddings, pinecone_handler, supabase_handler
 import google.generativeai as genai
 from groq import Groq
@@ -75,9 +76,17 @@ async def process_and_store_document(user_id: str, file_content: bytes, file_nam
         print("⚠️ No text chunks to process.")
         return
 
-    # 3. Generate embeddings for each chunk
+    # 3. Generate embeddings for each chunk with rate limiting
     print(f"🔢 Generating embeddings for {len(chunks)} chunks...")
-    chunk_embeddings = [embeddings.generate_embedding(chunk) for chunk in chunks]
+    chunk_embeddings = []
+    for i, chunk in enumerate(chunks):
+        if i > 0:
+            # Add 1 second delay between chunk processing to avoid rate limiting
+            print(f"⏸️ Rate limiting pause before chunk {i + 1}/{len(chunks)}...")
+            time.sleep(1)
+        print(f"Processing chunk {i + 1}/{len(chunks)}...")
+        embedding = embeddings.generate_embedding(chunk)
+        chunk_embeddings.append(embedding)
     
     # 4. Prepare vectors for Pinecone
     print("📝 Preparing vectors for Pinecone...")
