@@ -251,6 +251,19 @@ async def delete_document(doc_id: str, user_id: str = Depends(verify_firebase_to
         return {"success": True, "message": "Document deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting document: {str(e)}")
-        return {"success": True, "message": "All documents deleted successfully"}
+
+
+# --- Chat Management Endpoints ---
+@app.delete("/api/chat/{conversation_id}", summary="Delete a chat conversation")
+async def delete_chat(conversation_id: str, user_id: str = Depends(verify_firebase_token)):
+    """
+    Deletes a specific AI chat conversation and all its messages from Firestore.
+    The conversation_id can be: 'assistant', 'rag-analysis', 'therapist', etc.
+    """
+    try:
+        print(f"🗑️ Delete chat request for conversation: {conversation_id}, user: {user_id}")
+        await rag_service.delete_chat_conversation(user_id, conversation_id)
+        return {"success": True, "message": f"Chat conversation '{conversation_id}' deleted successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error deleting documents: {str(e)}")
+        print(f"❌ Error in delete_chat endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Error deleting chat: {str(e)}")
