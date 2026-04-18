@@ -25,7 +25,7 @@ The **ChatVerse AI Backend** is the powerful middleware orchestrating intelligen
 
 <div align="center">
 
-![ChatVerse AI Backend Architecture](../Eraser_FlowDiagram.png)
+![ChatVerse AI Backend Architecture](./images/diagram.png)
 
 </div>
 
