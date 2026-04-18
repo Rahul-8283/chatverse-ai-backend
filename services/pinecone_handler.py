@@ -94,14 +94,23 @@ async def delete_vectors(vector_ids: list, namespace: str = None):
     Args:
         vector_ids (list): List of vector IDs to delete.
         namespace (str): Optional namespace to delete from. If not provided, deletes globally.
+    
+    Raises:
+        Exception: If deletion fails or vector_ids is empty.
     """
+    if not vector_ids:
+        print("⚠️ Warning: No vector IDs provided for deletion")
+        return
+    
     try:
         if namespace:
+            print(f"🗑️ Deleting {len(vector_ids)} vectors from namespace '{namespace}': {vector_ids}")
             index.delete(ids=vector_ids, namespace=namespace)
-            print(f"Deleted {len(vector_ids)} vectors from namespace '{namespace}'.")
+            print(f"✅ Deleted {len(vector_ids)} vectors from namespace '{namespace}'.")
         else:
+            print(f"🗑️ Deleting {len(vector_ids)} vectors globally: {vector_ids}")
             index.delete(ids=vector_ids)
-            print(f"Deleted {len(vector_ids)} vectors globally.")
+            print(f"✅ Deleted {len(vector_ids)} vectors globally.")
     except Exception as e:
-        print(f"Error deleting vectors from Pinecone: {e}")
+        print(f"❌ Error deleting vectors from Pinecone: {e}")
         raise

@@ -252,6 +252,7 @@ async def delete_document(user_id: str, doc_id: str):
     Deletes a specific document from Firestore, Supabase, and Pinecone.
     """
     try:
+        print(f"🔍 Starting deletion for document {doc_id} from user {user_id}")
         doc_ref = get_db().collection('users').document(user_id).collection('documents').document(doc_id)
         doc = doc_ref.get()
         
@@ -262,16 +263,22 @@ async def delete_document(user_id: str, doc_id: str):
         vector_ids = doc_data.get('vectorIds', [])
         file_name = doc_data.get('fileName', '')
         
+        print(f"📋 Document data: fileName='{file_name}', vectorIds={vector_ids} (count: {len(vector_ids)})")
+        
         # Delete from Pinecone
         if vector_ids:
             print(f"🗑️ Deleting {len(vector_ids)} vectors from Pinecone...")
             await pinecone_handler.delete_vectors(vector_ids, namespace=user_id)
+            print(f"✅ Pinecone vectors deleted successfully")
+        else:
+            print(f"⚠️ No vectors found for this document - skipping Pinecone deletion")
         
         # Delete from Supabase if file name exists
         if file_name:
             try:
                 print(f"🗑️ Deleting file from Supabase...")
                 supabase_handler.delete_file_from_storage(user_id, file_name)
+                print(f"✅ File deleted from Supabase")
             except Exception as e:
                 print(f"⚠️ Warning: Could not delete from Supabase: {e}")
         
