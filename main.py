@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 # Import RAG services and authentication
-from services import rag_service, data_processor
+from services import rag_service, data_processor, chat_service, document_service
 from services.firebase_auth import verify_firebase_token
 from services.config import GEMINI_API_KEY, GROQ_API_KEY, GENERATIVE_MODEL, GROQ_MODEL
 
@@ -152,7 +152,7 @@ async def upload_document_handler(
         file_content = await file.read()
         content_type = file.content_type
         
-        await rag_service.process_and_store_document(
+        await document_service.process_and_store_document(
             user_id=user_id,
             file_content=file_content,
             file_name=file.filename,
@@ -225,7 +225,7 @@ async def get_documents(user_id: str = Depends(verify_firebase_token)):
     Retrieves all documents uploaded by the current user from Firestore.
     """
     try:
-        documents = await rag_service.get_user_documents(user_id)
+        documents = await document_service.get_user_documents(user_id)
         return {"documents": documents}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching documents: {str(e)}")
@@ -236,7 +236,7 @@ async def delete_all_documents(user_id: str = Depends(verify_firebase_token)):
     Deletes all documents uploaded by the user from Firestore, Supabase, and Pinecone.
     """
     try:
-        await rag_service.delete_all_documents(user_id)
+        await document_service.delete_all_documents(user_id)
         return {"success": True, "message": "All documents deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting all documents: {str(e)}")
@@ -247,7 +247,7 @@ async def delete_document(doc_id: str, user_id: str = Depends(verify_firebase_to
     Deletes a specific document from Firestore, Supabase, and Pinecone.
     """
     try:
-        await rag_service.delete_document(user_id, doc_id)
+        await document_service.delete_document(user_id, doc_id)
         return {"success": True, "message": "Document deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting document: {str(e)}")
@@ -262,7 +262,7 @@ async def delete_chat(conversation_id: str, user_id: str = Depends(verify_fireba
     """
     try:
         print(f"🗑️ Delete chat request for conversation: {conversation_id}, user: {user_id}")
-        await rag_service.delete_chat_conversation(user_id, conversation_id)
+        await chat_service.delete_chat_conversation(user_id, conversation_id)
         return {"success": True, "message": f"Chat conversation '{conversation_id}' deleted successfully"}
     except Exception as e:
         print(f"❌ Error in delete_chat endpoint: {e}")
