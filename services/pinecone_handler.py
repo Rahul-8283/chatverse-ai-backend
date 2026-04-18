@@ -2,7 +2,7 @@
 Handles vector database operations with Pinecone.
 """
 from pinecone import Pinecone, ServerlessSpec
-from .config import PINECONE_API_KEY, PINECONE_INDEX_NAME, EMBEDDING_DIMENSION
+from config.config import PINECONE_API_KEY, PINECONE_INDEX_NAME, EMBEDDING_DIMENSION
 
 # --- Pinecone Initialization ---
 try:
@@ -85,4 +85,32 @@ def delete_namespace(namespace: str):
         print(f"Deleted all vectors in namespace '{namespace}'.")
     except Exception as e:
         print(f"Error deleting namespace from Pinecone: {e}")
+        raise
+
+async def delete_vectors(vector_ids: list, namespace: str = None):
+    """
+    Deletes specific vectors by their IDs.
+
+    Args:
+        vector_ids (list): List of vector IDs to delete.
+        namespace (str): Optional namespace to delete from. If not provided, deletes globally.
+    
+    Raises:
+        Exception: If deletion fails or vector_ids is empty.
+    """
+    if not vector_ids:
+        print("⚠️ Warning: No vector IDs provided for deletion")
+        return
+    
+    try:
+        if namespace:
+            print(f"🗑️ Deleting {len(vector_ids)} vectors from namespace '{namespace}': {vector_ids}")
+            index.delete(ids=vector_ids, namespace=namespace)
+            print(f"✅ Deleted {len(vector_ids)} vectors from namespace '{namespace}'.")
+        else:
+            print(f"🗑️ Deleting {len(vector_ids)} vectors globally: {vector_ids}")
+            index.delete(ids=vector_ids)
+            print(f"✅ Deleted {len(vector_ids)} vectors globally.")
+    except Exception as e:
+        print(f"❌ Error deleting vectors from Pinecone: {e}")
         raise

@@ -3,7 +3,7 @@ Handles file storage operations with Supabase Storage.
 """
 from supabase import create_client, Client
 import os
-from .config import SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_BUCKET
+from config.config import SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_BUCKET
 
 # --- Supabase Client Initialization ---
 try:

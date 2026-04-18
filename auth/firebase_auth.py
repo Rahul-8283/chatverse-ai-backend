@@ -7,7 +7,7 @@ from firebase_admin import credentials, auth
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 
-from .config import FIREBASE_CREDENTIALS
+from config.config import FIREBASE_CREDENTIALS
 
 # --- Firebase Admin SDK Initialization ---
 try:

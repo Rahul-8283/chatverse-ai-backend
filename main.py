@@ -7,9 +7,9 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 # Import RAG services and authentication
-from services import rag_service, data_processor
-from services.firebase_auth import verify_firebase_token
-from services.config import GEMINI_API_KEY, GROQ_API_KEY, GENERATIVE_MODEL, GROQ_MODEL
+from services import rag_service, data_processor, chat_service, document_service
+from auth.firebase_auth import verify_firebase_token
+from config.config import GEMINI_API_KEY, GROQ_API_KEY, GENERATIVE_MODEL, GROQ_MODEL
 
 # --- FastAPI App Initialization ---
 app = FastAPI(title="ChatVerse AI Backend")
@@ -152,7 +152,7 @@ async def upload_document_handler(
         file_content = await file.read()
         content_type = file.content_type
         
-        await rag_service.process_and_store_document(
+        await document_service.process_and_store_document(
             user_id=user_id,
             file_content=file_content,
             file_name=file.filename,
@@ -217,3 +217,53 @@ async def voice_handler(file: UploadFile = File(...)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error transcribing audio: {str(e)}")
+
+# --- Document Management Endpoints ---
+@app.get("/api/documents", summary="Get all documents uploaded by user")
+async def get_documents(user_id: str = Depends(verify_firebase_token)):
+    """
+    Retrieves all documents uploaded by the current user from Firestore.
+    """
+    try:
+        documents = await document_service.get_user_documents(user_id)
+        return {"documents": documents}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching documents: {str(e)}")
+
+@app.delete("/api/documents/delete-all", summary="Delete all documents for user")
+async def delete_all_documents(user_id: str = Depends(verify_firebase_token)):
+    """
+    Deletes all documents uploaded by the user from Firestore, Supabase, and Pinecone.
+    """
+    try:
+        await document_service.delete_all_documents(user_id)
+        return {"success": True, "message": "All documents deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting all documents: {str(e)}")
+
+@app.delete("/api/documents/{doc_id}", summary="Delete a specific document")
+async def delete_document(doc_id: str, user_id: str = Depends(verify_firebase_token)):
+    """
+    Deletes a specific document from Firestore, Supabase, and Pinecone.
+    """
+    try:
+        await document_service.delete_document(user_id, doc_id)
+        return {"success": True, "message": "Document deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting document: {str(e)}")
+
+
+# --- Chat Management Endpoints ---
+@app.delete("/api/chat/{conversation_id}", summary="Delete a chat conversation")
+async def delete_chat(conversation_id: str, user_id: str = Depends(verify_firebase_token)):
+    """
+    Deletes a specific AI chat conversation and all its messages from Firestore.
+    The conversation_id can be: 'assistant', 'rag-analysis', 'therapist', etc.
+    """
+    try:
+        print(f"🗑️ Delete chat request for conversation: {conversation_id}, user: {user_id}")
+        await chat_service.delete_chat_conversation(user_id, conversation_id)
+        return {"success": True, "message": f"Chat conversation '{conversation_id}' deleted successfully"}
+    except Exception as e:
+        print(f"❌ Error in delete_chat endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Error deleting chat: {str(e)}")
