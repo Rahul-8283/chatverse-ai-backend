@@ -8,8 +8,8 @@ from typing import List, Optional
 
 # Import RAG services and authentication
 from services import rag_service, data_processor, chat_service, document_service
-from services.firebase_auth import verify_firebase_token
-from services.config import GEMINI_API_KEY, GROQ_API_KEY, GENERATIVE_MODEL, GROQ_MODEL
+from auth.firebase_auth import verify_firebase_token
+from config.config import GEMINI_API_KEY, GROQ_API_KEY, GENERATIVE_MODEL, GROQ_MODEL
 
 # --- FastAPI App Initialization ---
 app = FastAPI(title="ChatVerse AI Backend")

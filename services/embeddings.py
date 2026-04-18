@@ -2,7 +2,7 @@
 Handles the generation of embeddings using the Gemini API.
 """
 import google.generativeai as genai
-from .config import GEMINI_API_KEY, EMBEDDING_MODEL
+from config.config import GEMINI_API_KEY, EMBEDDING_MODEL
 import time
 import random
 

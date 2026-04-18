@@ -8,7 +8,7 @@ import speech_recognition as sr
 import google.generativeai as genai
 from PIL import Image
 
-from .config import GENERATIVE_MODEL
+from config.config import GENERATIVE_MODEL
 
 async def extract_text_from_image(file_content: bytes) -> str:
     """

@@ -2,7 +2,7 @@
 Handles vector database operations with Pinecone.
 """
 from pinecone import Pinecone, ServerlessSpec
-from .config import PINECONE_API_KEY, PINECONE_INDEX_NAME, EMBEDDING_DIMENSION
+from config.config import PINECONE_API_KEY, PINECONE_INDEX_NAME, EMBEDDING_DIMENSION
 
 # --- Pinecone Initialization ---
 try:

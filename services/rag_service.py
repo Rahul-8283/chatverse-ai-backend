@@ -6,7 +6,7 @@ import time
 from . import data_processor, embeddings, pinecone_handler, supabase_handler
 import google.generativeai as genai
 from groq import Groq
-from .config import GENERATIVE_MODEL, GROQ_API_KEY, GROQ_MODEL
+from config.config import GENERATIVE_MODEL, GROQ_API_KEY, GROQ_MODEL
 from firebase_admin import firestore
 
 # Initialize Groq client
