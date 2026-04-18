@@ -10,7 +10,16 @@ from firebase_admin import firestore
 
 # Initialize Groq client
 groq_client = Groq(api_key=GROQ_API_KEY)
-db = firestore.client()
+
+# Lazy initialization of Firestore client
+_db = None
+
+def get_db():
+    """Get Firestore client with lazy initialization."""
+    global _db
+    if _db is None:
+        _db = firestore.client()
+    return _db
 
 async def process_and_store_document(user_id: str, file_content: bytes, file_name: str, file_type: str):
     """
@@ -101,7 +110,7 @@ async def process_and_store_document(user_id: str, file_content: bytes, file_nam
         print("💾 Storing document metadata in Firestore...")
         
         doc_id = str(uuid.uuid4())
-        user_docs_ref = db.collection('users').document(user_id).collection('documents')
+        user_docs_ref = get_db().collection('users').document(user_id).collection('documents')
         user_docs_ref.document(doc_id).set({
             'fileName': file_name,
             'fileType': file_type,
@@ -209,7 +218,7 @@ async def get_user_documents(user_id: str) -> list:
     Returns a list of document metadata including name, type, and id.
     """
     try:
-        user_docs_ref = db.collection('users').document(user_id).collection('documents')
+        user_docs_ref = get_db().collection('users').document(user_id).collection('documents')
         docs = user_docs_ref.stream()
         
         documents = []
@@ -234,7 +243,7 @@ async def delete_document(user_id: str, doc_id: str):
     Deletes a specific document from Firestore, Supabase, and Pinecone.
     """
     try:
-        doc_ref = db.collection('users').document(user_id).collection('documents').document(doc_id)
+        doc_ref = get_db().collection('users').document(user_id).collection('documents').document(doc_id)
         doc = doc_ref.get()
         
         if not doc.exists:
@@ -272,7 +281,7 @@ async def delete_all_documents(user_id: str):
     Deletes all documents uploaded by a user from Firestore, Supabase, and Pinecone.
     """
     try:
-        user_docs_ref = db.collection('users').document(user_id).collection('documents')
+        user_docs_ref = get_db().collection('users').document(user_id).collection('documents')
         docs = user_docs_ref.stream()
         
         doc_list = list(docs)
