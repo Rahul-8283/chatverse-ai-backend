@@ -29,6 +29,11 @@ The **ChatVerse AI Backend** is the powerful middleware orchestrating intelligen
 
 </div>
 
+**Key Separation**: 
+- P2P chat between users is **direct Frontend-to-Firebase**, bypassing the backend entirely for maximum latency optimization
+- AI conversations flow through the backend for LLM processing and RAG context retrieval
+- This decoupled architecture ensures efficient resource utilization and real-time user experiences
+
 ---
 
 ## � Related Repositories
